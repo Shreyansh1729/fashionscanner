@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, HttpUrl
 from typing import Optional, List
 from enum import Enum
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone # Added timezone
 
 # --- Wardrobe Item Models ---
 class ItemCategory(str, Enum):
@@ -22,7 +22,7 @@ class WardrobeItemBase(BaseModel):
     material: Optional[str] = Field(None, max_length=50, example="Denim")
     brand: Optional[str] = Field(None, max_length=50, example="Levi's")
     size: Optional[str] = Field(None, max_length=20, example="M")
-    purchase_date: Optional[datetime] = Field(None, example=datetime.now().isoformat())
+    purchase_date: Optional[datetime] = Field(None, example=datetime.now(timezone.utc).isoformat())
     image_url: Optional[HttpUrl] = Field(None, example="http://example.com/image.jpg")
     notes: Optional[str] = Field(None, example="Goes well with white t-shirt.")
 
@@ -53,7 +53,10 @@ class WardrobeItem(WardrobeItemBase):
 class RecommendationRequestContext(BaseModel):
     event_type: str = Field(..., example="Casual dinner with friends")
     style_goal: Optional[str] = Field(None, example="Chic but comfortable")
-    inspirational_image_url: Optional[HttpUrl] = Field(None, example="http://example.com/inspiration.jpg")
+    # We'll handle URL or direct upload in the endpoint, not differentiated in this Pydantic model
+    # The service layer will decide if it got image_bytes or an image_url to process
+    inspirational_image_url_input: Optional[HttpUrl] = Field(None, description="URL of an inspirational image if providing a URL.")
+    # inspirational_image_upload will be handled by FastAPI UploadFile, not directly in this model for request body JSON
 
 # --- Outfit Suggestion & Recommendation Models ---
 class OutfitComponentSuggestion(BaseModel):
@@ -73,27 +76,29 @@ class OutfitRecommendationCreate(OutfitRecommendationBase): # Input from LLM/scr
     pass
 
 class OutfitRecommendation(OutfitRecommendationBase): # Generated recommendation object
-    id: uuid.UUID = Field(default_factory=uuid.uuid4) # Unique ID for this generated recommendation
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_id: uuid.UUID
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     event_type_context: Optional[str] = Field(None)
     style_goal_context: Optional[str] = Field(None)
-    inspirational_image_url_context: Optional[HttpUrl] = Field(None)
+    # To store original input if it was a URL, or note if it was an upload
+    inspirational_image_source_info: Optional[str] = Field(None, example="URL: http://... or Uploaded: filename.jpg") 
+    # To store LLM's analysis of the inspirational image
+    analyzed_inspirational_image_description: Optional[str] = Field(None, example="The image shows a person wearing a red dress with floral patterns...")
+
 
     class Config:
         from_attributes = True
 
 # --- Saved Outfit Models ---
-class SavedOutfitCreate(BaseModel): # Request body for saving an outfit
-    original_recommendation_id: uuid.UUID # ID of the OutfitRecommendation being saved
+class SavedOutfitCreate(BaseModel):
+    original_recommendation_id: uuid.UUID
     user_rating: Optional[int] = Field(None, ge=1, le=5, example=4)
     user_notes: Optional[str] = Field(None, example="Really liked the color combination!")
 
-class SavedOutfit(OutfitRecommendation): # The saved entity
-    # Inherits: id (this will be the NEW id of the SavedOutfit record), 
-    # user_id, components, overall_reasoning, created_at (from original), context fields...
-    original_recommendation_id: uuid.UUID # Links back to the specific OutfitRecommendation that was generated.
-    saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc)) # Timestamp for when this instance was saved
+class SavedOutfit(OutfitRecommendation):
+    original_recommendation_id: uuid.UUID
+    saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_rating: Optional[int] = Field(None, ge=1, le=5)
     user_notes: Optional[str] = Field(None)
 
