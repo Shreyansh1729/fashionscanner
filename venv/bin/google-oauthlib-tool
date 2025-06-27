@@ -1,8 +1,8 @@
-#!/Users/shreyansh/OutfitAi/venv/bin/python3
+#!/Users/shreyansh/OutfitAi/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
-from ultralytics.cfg import entrypoint
+from google_auth_oauthlib.tool.__main__ import main
 if __name__ == '__main__':
     sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
-    sys.exit(entrypoint())
+    sys.exit(main())

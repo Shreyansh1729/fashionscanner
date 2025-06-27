@@ -26,6 +26,7 @@ class UserBase(BaseModel):
     body_type: Optional[BodyType] = BodyType.UNSPECIFIED
     body_measurements: Optional[str] = Field(None, example="Bust: 34in, Waist: 28in, Hips: 38in")
     skin_tone: Optional[SkinTone] = SkinTone.UNSPECIFIED
+    skin_color: Optional[str] = Field(None, example="Olive")
     height_cm: Optional[int] = Field(None, gt=0, example=165) # Height in centimeters
     weight_kg: Optional[float] = Field(None, gt=0, example=60.5) # Weight in kilograms
 
@@ -42,6 +43,7 @@ class UserUpdate(UserBase):
     body_type: Optional[BodyType] = None
     body_measurements: Optional[str] = Field(None, example="Bust: 34in, Waist: 28in, Hips: 38in")
     skin_tone: Optional[SkinTone] = None
+    skin_color: Optional[str] = Field(None, example="Medium")
     height_cm: Optional[int] = Field(None, gt=0, example=170)
     weight_kg: Optional[float] = Field(None, gt=0, example=62.0)
 

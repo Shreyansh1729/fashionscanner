@@ -13,7 +13,13 @@ class Settings(BaseSettings):
     GOOGLE_GEMINI_API_KEY: Optional[str] = None
 
     # Database URL (example for SQLite, we can change this later)
-    DATABASE_URL: str = "sqlite:///./outfitai.db"
+    DATABASE_URL: str 
+        # --- NEW: JWT Settings ---
+    SECRET_KEY: str
+    
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    OPENWEATHER_API_KEY: Optional[str] = None
+    SCRAPER_API_KEY: Optional[str] = None 
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra='ignore')
 

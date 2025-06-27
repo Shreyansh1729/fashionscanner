@@ -1,115 +1,135 @@
-# OutfitAI: AI-Powered Smart Outfit Recommendation System
+# 👗 OutfitAI: AI-Powered Smart Outfit Recommendation System
 
-OutfitAI is a Python-based backend system that provides personalized outfit recommendations using an AI Language Model (LLM), considering user profiles, existing wardrobe items, and contextual information like event type and style goals.
+**OutfitAI** is an AI-driven fashion intelligence platform that delivers hyper-personalized outfit recommendations. It combines deep user profiling, wardrobe digitization, contextual awareness (events, weather), and a multi-source fashion scraping engine — essentially acting as a *Skyscanner for Fashion*.
 
-## Project Plan Highlights (MVP)
+---
 
-*   User profile and digital wardrobe management.
-*   Contextual input for recommendations (event, style).
-*   AI Core: LLM integration (currently Google Gemini) for generating outfit component suggestions.
-*   Basic Product Search: Generates Google search links for suggested items.
-*   Save Outfits: Allows users to save liked AI-generated recommendations.
+## ✨ Features
 
-## Core Technologies (MVP Backend)
+- **🔐 Secure Authentication**
+  - Full registration and login using JWT.
+  - Passwords hashed using `bcrypt`.
 
-*   **Python 3.9+**
-*   **FastAPI:** For building the web API.
-*   **Pydantic:** For data validation and settings management.
-*   **Google Gemini API:** For LLM-based recommendations.
-*   **Uvicorn:** ASGI server for running the FastAPI application.
-*   In-memory Python dictionaries for data storage (MVP).
+- **🧠 AI-Powered Profile Analysis**
+  - Upload a photo to auto-detect age, gender, body type, and skin tone.
+  - Powered by DeepFace + Google Gemini Vision.
 
-## Setup and Installation
+- **👗 Smart Outfit Recommendations**
+  - Custom-tailored suggestions based on:
+    - **User Attributes**: body shape, skin tone, gender.
+    - **Context**: event type, location, weather, style goals.
+    - **Inspiration**: upload an image or link to recreate a style.
 
-1.  **Prerequisites:**
-    *   Python 3.9 or higher
-    *   Git
+- **🛍️ Multi-Site Retail Scraping**
+  - Hybrid scraping engine:
+    - Uses `ScraperAPI` to avoid anti-bot defenses.
+    - Falls back to headless browser (`Selenium-Stealth`) when needed.
+  - Retrieves results from sites like Myntra, Ajio, etc.
+  - Retry logic ensures optimal product discovery.
 
-2.  **Clone the repository (if applicable):**
-    ```bash
-    git clone <your-repo-url>
-    cd OutfitAI
-    ```
-    (If you haven't set up a Git repo yet, you'd just be in your local `OutfitAI` directory)
+- **🧾 AI Shopping Intelligence**
+  - Uses LLMs to extract color, material, fit, etc., from scraped data.
+  - Products saved in a searchable master catalog.
+  - API available for advanced product filtering.
 
-3.  **Create and activate a virtual environment:**
-    *   On macOS/Linux:
-        ```bash
-        python3 -m venv venv
-        source venv/bin/activate
-        ```
-    *   On Windows:
-        ```bash
-        python -m venv venv
-        .\venv\Scripts\activate
-        ```
+- **📊 User Interaction Logging**
+  - Fire-and-forget event logger to track engagement for future ML optimization.
 
-4.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+---
 
-5.  **Set up Environment Variables:**
-    *   Copy the example environment file:
-        ```bash
-        cp .env.example .env
-        ```
-        (or `copy .env.example .env` on Windows CMD)
-    *   Edit the `.env` file and add your API keys:
-        ```env
-        # .env
-        OPENAI_API_KEY="sk-your_openai_api_key_if_still_used_or_remove" # Currently we switched to Gemini
-        GOOGLE_GEMINI_API_KEY="your_google_gemini_api_key_here"
-        DATABASE_URL="sqlite:///./outfitai.db" # Current default for settings, though not yet used
-        ```
-    *   **Important:** Ensure your `GOOGLE_GEMINI_API_KEY` is valid and has the "Generative Language API" enabled in your Google Cloud project.
+## 🔧 Tech Stack
 
-## Running the Application (Development)
+| Layer       | Tools & Libraries                             |
+|-------------|------------------------------------------------|
+| Backend     | Python, FastAPI                                |
+| AI/ML       | Google Gemini, DeepFace, TensorFlow            |
+| Database    | PostgreSQL, SQLite (dev), SQLAlchemy, Alembic  |
+| Scraping    | ScraperAPI, Selenium, BeautifulSoup            |
+| Security    | `passlib[bcrypt]`, `python-jose[cryptography]` |
+| Async I/O   | `asyncio`, `httpx`                             |
 
-With the virtual environment activated and `.env` file configured:
 
-```bash
+
+### 1. Prerequisites
+
+* Python 3.9+
+* Git
+* PostgreSQL (for production) or SQLite (for dev)
+
+---
+
+### 2. Clone the Repository
+
+
+git clone <your-repo-url>
+cd OutfitAI
+
+
+---
+
+### 3. Set Up a Virtual Environment
+
+
+python3 -m venv venv
+source venv/bin/activate
+
+
+---
+
+### 4. Install Dependencies
+
+
+pip install -r requirements.txt
+
+
+---
+
+### 5. Configure Environment Variables
+
+
+cp .env.example .env
+
+
+Edit the `.env` file with your own values:
+
+
+# For development
+DATABASE_URL="sqlite+aiosqlite:///./outfitai.db"
+
+# For production
+# DATABASE_URL="postgresql+asyncpg://user:password@host:port/dbname"
+
+GOOGLE_GEMINI_API_KEY="your_gemini_api_key"
+OPENWEATHER_API_KEY="your_openweathermap_api_key"
+SCRAPER_API_KEY="your_scraperapi_key"
+SECRET_KEY="generate using: openssl rand -hex 32"
+ACCESS_TOKEN_EXPIRE_MINUTES=43200
+
+
+---
+
+### 6. Run Migrations
+
+
+alembic upgrade head
+
+
+---
+
+## ▶️ Run the Application
+
+
 uvicorn outfitai_project.main:app --reload
 
-OutfitAI/
-├── venv/                   # Virtual environment
-├── .env                    # Local environment variables (ignored by Git)
-├── .env.example            # Example environment variables
-├── .gitignore              # Files to ignore in Git
-├── README.md               # This file
-├── requirements.txt        # Python package dependencies
-├── config/                 # Configuration files
-│   └── settings.py
-├── outfitai_project/       # Main application package
-│   ├── __init__.py
-│   ├── main.py             # FastAPI app entry point
-│   ├── apis/               # API route definitions
-│   │   └── routes.py
-│   ├── core/               # Core logic (e.g., recommender)
-│   │   └── recommender.py
-│   ├── models/             # Pydantic data models
-│   │   ├── user_models.py
-│   │   └── outfit_models.py
-│   ├── scraping/           # Web scraping utilities
-│   │   └── scraper.py
-│   ├── services/           # Business logic services
-│   │   ├── user_service.py
-│   │   └── wardrobe_service.py
-│   └── utils/              # Utility functions (currently empty)
-└── tests/                  # Automated tests (to be added)
 
+* Swagger UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+* Simple UI: [http://127.0.0.1:8000/ui/recommend](http://127.0.0.1:8000/ui/recommend)
 
-API Endpoints
-Refer to the /docs endpoint for a full, interactive list of API endpoints, request/response models, and testing capabilities. Key MVP endpoints include:
-Users: POST /users/, GET /users/{user_id}, etc.
-Wardrobe: POST /users/{user_id}/wardrobe/, GET /users/{user_id}/wardrobe/, etc.
-AI Recommendations: POST /users/{user_id}/recommend-outfit/
-Saved Outfits: POST /users/{user_id}/saved-outfits/, GET /users/{user_id}/saved-outfits/, etc.
-Future Work (Beyond MVP)
-Database integration (e.g., PostgreSQL, SQLite for persistence).
-User authentication and authorization (OAuth2 with JWTs).
-Enhanced scraping for specific product details (not just search links).
-Image analysis for user photos and inspirational images.
-More sophisticated recommendation algorithms.
-Virtual Try-On (VTO) integration.
-And much more as per the full project plan...
+---
+
+## 💡 Tip for Production
+
+* Use PostgreSQL and `gunicorn` for deployment.
+* Use a `.env.production` file with secure values.
+* Consider Dockerizing for portability.
+

@@ -1,110 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OutfitAI Recommendation</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 700px; margin: auto; }
-        h1, h2 { color: #5a5a5a; }
-        label { display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], input[type="url"], select, textarea { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        input[type="file"] { padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; display: block; }
-        input[type="submit"] { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        input[type="submit"]:hover { background-color: #0056b3; }
-        .error { color: red; font-weight: bold; margin-bottom: 15px; }
-        .recommendation { margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 4px; background-color: #f9f9f9; }
-        .recommendation h3 { margin-top: 0; color: #007bff; }
-        .recommendation ul { list-style-type: none; padding-left: 0; }
-        .recommendation li { background-color: #fff; margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        .recommendation p, .recommendation div { margin-top: 5px; }
-        .recommendation a { color: #0056b3; text-decoration: none; }
-        .recommendation a:hover { text-decoration: underline; }
-        .label-hint {font-size: 0.9em; color: #777; font-weight: normal;}
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OutfitAI Recommendation</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background-color: #f7f7f7; color: #333; line-height: 1.6; transition: background-color 0.3s, color 0.3s; }
+    .dark-mode { background-color: #121212; color: #f4f4f4; }
+    .container { background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 700px; margin: 2rem auto; transition: background-color 0.3s; }
+    .dark-mode .container { background-color: #1e1e1e; }
+    label { display: block; margin-top: 15px; margin-bottom: 6px; font-weight: 600; font-size: 0.95em; }
+    input[type="text"], input[type="url"], input[type="date"], select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1em; }
+    input[type="submit"] { display: block; width: 100%; background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 1.1em; font-weight: bold; margin-top: 20px; }
+    input[type="submit"]:hover { background-color: #0056b3; }
+    .error { color: #e74c3c; background-color: #fdd; padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 15px; }
+    .recommendation { margin-top: 25px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fdfdfd; }
+    .dark-mode .recommendation { background-color: #2b2b2b; }
+    .recommendation ul { list-style-type: none; padding-left: 0; }
+    .recommendation li { background-color: #fff; margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+    .dark-mode .recommendation li { background-color: #333; border-color: #555; }
+    .label-hint { font-size: 0.85em; color: #777; font-weight: normal; margin-bottom: 10px; display: block; }
+    .product-suggestions { margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
+    .product-carousel { display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; }
+    .product-item { min-width: 200px; border: 1px solid #ccc; padding: 10px; border-radius: 4px; background-color: #fff; flex-shrink: 0; }
+    .dark-mode .product-item { background-color: #444; border-color: #666; }
+    .product-item img { width: 100%; height: auto; display: block; margin-bottom: 8px; }
+    .controls { margin-bottom: 10px; }
+    .controls select { padding: 5px; }
+    .dark-mode a { color: #91c8ff; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>OutfitAI - Get an Outfit Recommendation</h1>
+<div class="container">
+  <button onclick="toggleDarkMode()" style="float:right;">🌓 Toggle Dark Mode</button>
+  <h1>OutfitAI - Get an Outfit Recommendation</h1>
 
-        {% if error_message %}
-            <p class="error">{{ error_message }}</p>
-        {% endif %}
+  {% if error_message %}
+    <p class="error">{{ error_message }}</p>
+  {% endif %}
 
-        <form method="post" enctype="multipart/form-data"> {# enctype is crucial for file uploads #}
-            <label for="user_id_str">Select User:</label>
-            <select name="user_id_str" id="user_id_str" required>
-                <option value="">-- Select a User --</option>
-                {% for user_item in users %} {# Renamed to avoid conflict with user var #}
-                    <option value="{{ user_item.id }}" {% if selected_user_id and selected_user_id == user_item.id|string %}selected{% endif %}>
-                        {{ user_item.username or user_item.email }} (ID: {{ user_item.id }})
-                    </option>
+  <form method="post" enctype="multipart/form-data">
+    <label for="user_id_str">Select User:</label>
+    <select name="user_id_str" id="user_id_str" required>
+      <option value="" disabled selected>-- Select a User --</option>
+      {% for user_item in users %}
+        <option value="{{ user_item.id }}">{{ user_item.username or user_item.email }}</option>
+      {% endfor %}
+    </select>
+    {% if not users %}
+      <p class="label-hint">No users found. Create one via the API documentation.</p>
+    {% endif %}
+
+    <!-- --- NEW: User's Photo for Analysis --- -->
+    <label for="user_photo_upload">Your Photo (Optional):</label>
+    <span class="label-hint">Upload your photo to get personalized analysis (age, gender, etc.).</span>
+    <input type="file" name="user_photo_upload" id="user_photo_upload" accept="image/jpeg,image/png,image/webp">
+    <!-- --- END NEW SECTION --- -->
+
+    <label for="event_type">Event/Occasion:</label>
+    <input type="text" name="event_type" id="event_type" required>
+    <label for="style_goal">Desired Style/Mood (Optional):</label>
+    <textarea name="style_goal" id="style_goal" rows="2"></textarea>
+    <label for="location">Location (Optional):</label>
+    <span class="label-hint">For weather context (e.g., "Paris, France").</span>
+    <input type="text" name="location" id="location" placeholder="e.g., London">
+    <label for="event_date">Event Date (Optional):</label>
+    <span class="label-hint">For weather forecast. Leave blank for current weather.</span>
+    <input type="date" name="event_date" id="event_date">
+    <label for="inspirational_image_url_input">Inspirational Image URL (Optional):</label>
+    <input type="url" name="inspirational_image_url_input" id="inspirational_image_url_input" placeholder="e.g., http://example.com/image.jpg">
+    <label for="inspirational_image_upload">OR Upload Inspirational Image (Optional):</label>
+    <input type="file" name="inspirational_image_upload" id="inspirational_image_upload" accept="image/jpeg,image/png,image/webp">
+    <input type="submit" value="Get Recommendation">
+    <!-- Add this to your form inside templates/recommend_form.html -->
+
+<label for="color_palette">Color Palette (Optional):</label>
+<span class="label-hint">Request a specific color scheme (e.g., "Earthy Tones", "Pastel", "All Black").</span>
+<input type="text" name="color_palette" id="color_palette" placeholder="e.g., Monochromatic Blue">
+  </form>
+
+  {% if recommendation %}
+    <div class="recommendation">
+      <h2>AI Recommendation (ID: {{ recommendation.id }}):</h2>
+      <p><strong>For Event:</strong> {{ recommendation.event_type_context }}</p>
+      {% if recommendation.style_goal_context %}<p><strong>Style Goal:</strong> {{ recommendation.style_goal_context }}</p>{% endif %}
+      {% if recommendation.analyzed_inspirational_image_description %}<p><strong>AI Analysis:</strong> {{ recommendation.analyzed_inspirational_image_description }}</p>{% endif %}
+
+      <h3>Suggested Components:</h3>
+      <ul>
+        {% for component in recommendation.components %}
+        <li>
+          <strong>{{ component.item_category.value }}:</strong> {{ component.description }}
+
+          {% if component.scraped_products %}
+            <div class="product-suggestions">
+              <h4>Shop this look:</h4>
+              <div class="controls">
+                <label for="sortSelect-{{ loop.index }}">Sort by:</label>
+                <select id="sortSelect-{{ loop.index }}">
+                  <option value="default">Default</option>
+                  <option value="name">Name A-Z</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                </select>
+              </div>
+              <div class="controls">
+                <label>Filter by:</label>
+                <input type="text" placeholder="Brand..." data-filter="brand" data-carousel-id="{{ loop.index }}" oninput="handleFilterInput(this)" style="margin-right:10px;" />
+                <input type="number" placeholder="Min ₹" data-filter="min" data-carousel-id="{{ loop.index }}" oninput="handleFilterInput(this)" style="width: 80px; margin-right: 5px;">
+                <input type="number" placeholder="Max ₹" data-filter="max" data-carousel-id="{{ loop.index }}" oninput="handleFilterInput(this)" style="width: 80px;">
+              </div>
+              
+              <div class="product-carousel" id="carousel-{{ loop.index }}">
+                {% for product in component.scraped_products %}
+                <div class="product-item"
+                     data-name="{{ product.retailer }} {{ product.product_name }}"
+                     data-price="{% if 'Rs.' in product.price or '₹' in product.price %}
+                                   {{ (product.price.split('Rs.')[1] if 'Rs.' in product.price else product.price.split('₹')[1])|replace(',', '')|float }}
+                                 {% else %}
+                                   {{ product.price|replace(',', '')|float }}
+                                 {% endif %}">
+                  <img src="{{ product.image_url }}" alt="{{ product.product_name }}" style="object-fit: cover; height: 200px;">
+                  <strong>[{{ product.retailer }}]</strong><br/>
+                  <a href="{{ product.product_url }}" target="_blank" title="{{ product.product_name }}">{{ product.product_name|truncate(35) }}</a><br/>
+                  <span>{{ product.price }}</span>
+                </div>
                 {% endfor %}
-            </select>
-            {% if not users %}
-                <p>No users found. Create users via API at <a href="/docs" target="_blank">/docs</a>.</p>
-            {% endif %}
-
-            <label for="event_type">Event/Occasion:</label>
-            <input type="text" name="event_type" id="event_type" value="{{ event_type_val or '' }}" required>
-
-            <label for="style_goal">Desired Style/Mood (Optional):</label>
-            <textarea name="style_goal" id="style_goal" rows="3">{{ style_goal_val or '' }}</textarea>
-            
-            <label for="inspirational_image_url_input">Inspirational Image URL (Optional):</label>
-             <span class="label-hint">Provide a public URL if not uploading a file.</span>
-            <input type="url" name="inspirational_image_url_input" id="inspirational_image_url_input" placeholder="e.g., http://example.com/image.jpg" value="{{ inspirational_image_url_input_val or '' }}">
-
-            <label for="inspirational_image_upload">OR Upload Inspirational Image (Optional):</label>
-            <span class="label-hint">Max 5MB. Uploading an image will override the URL if both are provided.</span>
-            <input type="file" name="inspirational_image_upload" id="inspirational_image_upload" accept="image/jpeg,image/png,image/webp">
-
-            <input type="submit" value="Get Recommendation">
-        </form>
-
-        {% if recommendation %}
-            <div class="recommendation">
-                <h2>AI Recommendation (ID: {{ recommendation.id }}):</h2>
-                <p><strong>For Event:</strong> {{ recommendation.event_type_context }}</p>
-                {% if recommendation.style_goal_context %}
-                    <p><strong>Style Goal:</strong> {{ recommendation.style_goal_context }}</p>
-                {% endif %}
-                
-                {% if recommendation.inspirational_image_source_info %}
-                    <div><strong>Inspiration Source:</strong> {{ recommendation.inspirational_image_source_info }}</div>
-                {% endif %}
-                {% if recommendation.analyzed_inspirational_image_description %}
-                    <div>
-                        <strong>AI Analysis of Inspiration Image:</strong>
-                        <p style="white-space: pre-wrap; background-color: #e9ecef; padding: 8px; border-radius: 3px;">{{ recommendation.analyzed_inspirational_image_description }}</p>
-                    </div>
-                {% endif %}
-
-                <h3>Suggested Components:</h3>
-                <ul>
-                    {% for component in recommendation.components %}
-                    <li>
-                        <strong>{{ component.item_category.value }}:</strong> {{ component.description }}
-                        {% if component.product_store_url or component.product_image_url %}
-                            <p>
-                                {% if component.product_store_url %}
-                                    <a href="{{ component.product_store_url }}" target="_blank">Find Items</a>
-                                {% endif %}
-                                {% if component.product_image_url %}
-                                    {% if component.product_store_url %}|{% endif %} 
-                                    <a href="{{ component.product_image_url }}" target="_blank">See Images</a>
-                                {% endif %}
-                            </p>
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% if recommendation.overall_reasoning %}
-                    <p><strong>Stylist's Reasoning:</strong> {{ recommendation.overall_reasoning }}</p>
-                {% endif %}
+              </div>
             </div>
-        {% endif %}
+          {% else %}
+<!-- THIS IS THE NEW FALLBACK LOGIC -->
+<p>
+    No direct product suggestions found. 
+    {% if component.fallback_search_url %}
+        <a href="{{ component.fallback_search_url }}" target="_blank">Search for this item on Google.</a>
+    {% endif %}
+</p>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% if recommendation.overall_reasoning %}<p><strong>Stylist's Reasoning:</strong> {{ recommendation.overall_reasoning }}</p>{% endif %}
     </div>
+  {% endif %}
+</div>
+
+<script>
+  function toggleDarkMode() {
+    document.body.classList.toggle("dark-mode");
+  }
+
+  function sortProducts(carouselIndex) {
+    const select = document.getElementById(`sortSelect-${carouselIndex}`);
+    const container = document.getElementById(`carousel-${carouselIndex}`);
+    const items = Array.from(container.querySelectorAll('.product-item'));
+    const sortType = select.value;
+
+    items.sort((a, b) => {
+      const nameA = a.dataset.name?.toLowerCase() || "";
+      const nameB = b.dataset.name?.toLowerCase() || "";
+      const priceA = parseFloat(a.dataset.price || 0);
+      const priceB = parseFloat(b.dataset.price || 0);
+
+      if (sortType === 'name') return nameA.localeCompare(nameB);
+      if (sortType === 'price_asc') return priceA - priceB;
+      if (sortType === 'price_desc') return priceB - priceA;
+      return 0;
+    });
+
+    container.innerHTML = '';
+    items.forEach(item => container.appendChild(item));
+  }
+  function handleFilterInput(inputElement) {
+    const carouselIndex = inputElement.dataset.carouselId;
+    filterProducts(carouselIndex);
+  }
+
+  function filterProducts(carouselIndex) {
+    const container = document.getElementById(`carousel-${carouselIndex}`);
+    const brandInput = document.querySelector(`[data-filter="brand-${carouselIndex}"]`).value.toLowerCase();
+    const minPrice = parseFloat(document.querySelector(`[data-filter="min-${carouselIndex}"]`).value) || 0;
+    const maxPrice = parseFloat(document.querySelector(`[data-filter="max-${carouselIndex}"]`).value) || Infinity;
+
+    container.querySelectorAll('.product-item').forEach(item => {
+      const name = item.dataset.name?.toLowerCase() || "";
+      const price = parseFloat(item.dataset.price || 0);
+
+      const matchesBrand = name.includes(brandInput);
+      const inRange = price >= minPrice && price <= maxPrice;
+
+      item.style.display = (matchesBrand && inRange) ? 'block' : 'none';
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll('.controls select').forEach(select => {
+      const carouselId = select.id.split('-')[1];
+      select.addEventListener('change', () => sortProducts(carouselId));
+    });
+  });
+</script>
 </body>
 </html>
