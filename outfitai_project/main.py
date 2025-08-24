@@ -15,7 +15,7 @@ from pydantic import HttpUrl, ValidationError
 
 # Configuration and Routers
 from config.settings import settings
-from .apis import routes as api_routes_v1, login_routes, context_routes ,product_routes , log_routes
+from .apis import routes as api_routes_v1, login_routes, context_routes ,product_routes , log_routes , wardrobe_routes, suggestion_routes , analytics_routes , history_routes , pairing_routes
 
 # Pydantic Models for validation
 from .models.outfit_models import RecommendationRequestContext, WardrobeItem as PydanticWardrobeItem
@@ -58,6 +58,12 @@ app.include_router(context_routes.router, prefix=settings.API_V1_STR)
 app.include_router(api_routes_v1.router, prefix=settings.API_V1_STR)
 app.include_router(product_routes.router, prefix=settings.API_V1_STR) # <-- ADD 
 app.include_router(log_routes.router, prefix=settings.API_V1_STR) # <-- ADD THIS LINE
+app.include_router(wardrobe_routes.router, prefix=settings.API_V1_STR)
+app.include_router(suggestion_routes.router, prefix=settings.API_V1_STR)
+app.include_router(analytics_routes.router, prefix=settings.API_V1_STR)
+app.include_router(history_routes.router, prefix=settings.API_V1_STR)
+app.include_router(pairing_routes.router, prefix=settings.API_V1_STR)
+
 
 # --- UI Endpoints ---
 @app.get("/ui/recommend", response_class=HTMLResponse, tags=["UI"])

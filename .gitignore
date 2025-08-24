@@ -1,112 +1,27 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+*.pyd
 
-# C extensions
-*.so
+# Virtual Environment
+venv/
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib60/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# Local database files
+*.db
+*.sqlite3
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+# Vector Database (ChromaDB)
+chroma_db/
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+# Static files - User Uploads
+# It's often better to not track user-uploaded content in git
+static/uploads/
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Virtual environments
+# Environment variables
 .env
-.venv
-env/
-venv/ # Our virtual environment directory
-ENV/
-env.bak/
-venv.bak/
 
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IDEs and editors
-/.idea/
-/.vscode/
+# IDE / Editor specific
+.idea/
+.vscode/
 *.swp
-*.swo
-*~
-
-# dotenv
-.env*
-!.env.example # except for example file
-
-# OS specific
-.DS_Store
-Thumbs.db
-Desktop.ini
-
-# Sensitive configuration files (add more as needed)
-# Example: config/secrets.ini
-# config/api_keys.json
-# *.pem
-# *.key

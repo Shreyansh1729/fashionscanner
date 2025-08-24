@@ -1,17 +1,24 @@
 # outfitai_project/db/orm_models.py
 import uuid
+import enum
 from sqlalchemy import (
     Column, String, Text, Boolean, Integer, Float, DateTime, Enum, ForeignKey, JSON, TypeDecorator
 )
 # REMOVE: from sqlalchemy.dialects.postgresql import UUID  <-- Remove this old import
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
-
+from sqlalchemy.sql import func
 from .database import Base
 from ..models.user_models import BodyType, SkinTone
 from ..models.outfit_models import ItemCategory
 from sqlalchemy import UniqueConstraint
+from ..models.outfit_models import ItemCategory
 
+class AddedMethod(str, enum.Enum):
+    TEXT = "text"
+    IMAGE = "image"
+    VOICE = "voice"
+    MANUAL = "manual" # Assuming existing items are manual
 
 # --- NEW: Custom UUID Type for cross-database compatibility ---
 class GUID(TypeDecorator):
@@ -50,6 +57,8 @@ class GUID(TypeDecorator):
                 value = uuid.UUID(value)
             return value
 
+
+
 # --- Models updated to use the new GUID type ---
 class User(Base):
     __tablename__ = "users"
@@ -73,11 +82,11 @@ class User(Base):
 
 class WardrobeItem(Base):
     __tablename__ = "wardrobe_items"
-    id = Column(GUID, primary_key=True, default=uuid.uuid4) # <-- Use GUID
-    user_id = Column(GUID, ForeignKey("users.id"), nullable=False) # <-- Use GUID
-    # ... rest of the WardrobeItem model is the same
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID, ForeignKey("users.id"), nullable=False)
+    
     name = Column(String, index=True, nullable=False)
-    category = Column(Enum(ItemCategory), nullable=False)
+    category = Column(Enum(ItemCategory), nullable=False) # Uses the native SQLAlchemy Enum
     color = Column(String, nullable=True)
     material = Column(String, nullable=True)
     brand = Column(String, nullable=True)
@@ -87,6 +96,11 @@ class WardrobeItem(Base):
     notes = Column(Text, nullable=True)
     added_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     last_worn = Column(DateTime, nullable=True)
+    
+    # --- NEW AND MODIFIED COLUMNS ---
+    style = Column(String, nullable=True) # e.g., 'casual', 'formal', 'sporty'
+    added_method = Column(Enum(AddedMethod), default=AddedMethod.MANUAL)
+    
     owner = relationship("User", back_populates="wardrobe_items")
 
 class GeneratedRecommendation(Base):
@@ -154,5 +168,17 @@ class UserEvent(Base):
     # --- RENAMED THIS COLUMN ---
     # From 'metadata' to 'event_data' to avoid keyword conflict
     event_data = Column(JSON, nullable=True)
+
+    user = relationship("User")
+
+class WornOutfitHistory(Base):
+    __tablename__ = 'worn_outfit_history'
+
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID, ForeignKey("users.id"), nullable=False)
+    # We store a list of wardrobe item IDs as a simple string
+    item_ids = Column(String, nullable=False) # e.g., "uuid1,uuid2,uuid3"
+    event_context = Column(String) # e.g., "office", "diwali", "gym"
+    worn_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User")

@@ -1,10 +1,10 @@
-# outfitai_project/models/outfit_models.py
+# In outfitai_project/models/outfit_models.py
 
 from pydantic import BaseModel, Field, HttpUrl
-from typing import Optional, List , Literal
+from typing import Optional, List, Literal, Dict  # <--- THIS LINE IS THE FIX
 from enum import Enum
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone , date
 
 
 # --- NEW: Enums for sorting and filtering ---
@@ -19,6 +19,9 @@ class ItemCategory(str, Enum):
     SHOES = "Shoes"
     ACCESSORY = "Accessory"
     DRESS = "Dress"
+    # --- ADD THESE NEW CATEGORIES ---
+    FULL_BODY = "Full Body"      # For jumpsuits, rompers etc.
+    TRADITIONAL = "Traditional"  # For Kurtas, Sarees etc.
     OTHER = "Other"
 
 class WardrobeItemBase(BaseModel):
@@ -71,7 +74,7 @@ class RecommendationRequestContext(BaseModel):
 
     # --- ADVANCED SCRAPING CONTROLS ---
     retailers_to_search: List[Retailer] = Field(
-        default=["Myntra", "Ajio"], 
+        default=["Myntra", "Ajio"],
         description="A list of preferred retailers to search."
     )
     product_limit_per_retailer: int = Field(
@@ -80,11 +83,11 @@ class RecommendationRequestContext(BaseModel):
     )
     # --- ADVANCED FILTERING/SORTING ---
     sort_by: SortBy = Field(
-        default="relevance", 
+        default="relevance",
         description="How to sort the final list of products."
     )
     min_rating: Optional[float] = Field(
-        None, ge=0, le=5, 
+        None, ge=0, le=5,
         description="Minimum product rating to include (if available)."
     )
 
@@ -101,9 +104,9 @@ class OutfitComponentSuggestion(BaseModel):
     item_category: ItemCategory
     description: str  # e.g., "A-line blue floral kurta"
     scraped_products: List[ScrapedProduct] = Field(default_factory=list)
-    search_query: str 
+    search_query: str
     fallback_search_url: Optional[HttpUrl] = Field(None, description="A Google Shopping link if direct scraping fails.")
-    
+
 
     class Config:
         from_attributes = True
@@ -134,7 +137,7 @@ class OutfitRecommendation(OutfitRecommendationBase):
 
 # --- Saved Outfit Models ---
 class SavedOutfitCreate(BaseModel):
-    original_recommendation_id: uuid.UUID = Field(..., example="550e8400-e29b-41d4-a716-446655440000")
+    original_recommendation_id: uuid.UUID = Field(..., alias="recommendation_id", example="550e8400-e29b-41d4-a716-446655440000")
     user_rating: Optional[int] = Field(None, ge=1, le=5, example=4)
     user_notes: Optional[str] = Field(None, example="Really liked the color combination!")
 
@@ -142,10 +145,79 @@ class SavedOutfit(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_id: uuid.UUID
     saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    original_recommendation_id: uuid.UUID
+    recommendation_id: uuid.UUID
     user_rating: Optional[int] = Field(None, ge=1, le=5, example=5)
     user_notes: Optional[str] = Field(None, example="Loved this look for the office.")
     recommendation: OutfitRecommendation
 
     class Config:
         from_attributes = True
+
+# --- ADD THESE NEW MODELS ---
+
+class WardrobeItemCreateText(BaseModel):
+    """Schema for adding an item via a text description."""
+    description: str = Field(..., example="A pair of blue slim-fit denim jeans")
+
+class SuggestionContext(BaseModel):
+    """Represents a single context for which an outfit is needed."""
+    occasion: str # e.g., "Work Meeting", "Diwali Puja", "Casual Weekend"
+    mood: Optional[str] = "neutral"
+
+class WardrobeItemResponse(WardrobeItem):
+    """A response model to avoid potential circular dependencies if they arise."""
+    class Config:
+        from_attributes = True
+
+class OutfitSuggestion(BaseModel):
+    """Represents a single complete outfit suggestion for one occasion."""
+    top: Optional[WardrobeItemResponse] = None
+    bottom: Optional[WardrobeItemResponse] = None
+    outerwear: Optional[WardrobeItemResponse] = None
+    shoes: Optional[WardrobeItemResponse] = None
+    accessory: Optional[WardrobeItemResponse] = None
+    dress: Optional[WardrobeItemResponse] = None
+    full_body: Optional[WardrobeItemResponse] = None
+    traditional: Optional[WardrobeItemResponse] = None
+
+class DailyOutfitResponse(BaseModel):
+    """The final response containing suggestions for all of today's events."""
+    suggestions: Dict[str, OutfitSuggestion]
+    purchase_recommendation: Optional[str] = None
+
+class ConfirmWornRequest(BaseModel):
+    """Input schema for the endpoint to confirm an outfit was worn."""
+    item_ids: List[uuid.UUID] = Field(..., description="A list of the UUIDs of the wardrobe items that were worn together.")
+    event_context: str = Field(..., description="The context in which the outfit was worn, e.g., 'Office', 'Diwali Party'.", example="Office")
+
+class WornOutfitHistoryResponse(BaseModel):
+    """Output schema representing a single entry in the user's outfit history."""
+    worn_at: datetime
+    event_context: str
+    items: List[WardrobeItemResponse] # Re-using the detailed item response schema
+
+    class Config:
+        from_attributes = True
+
+class ItemPairingResponse(BaseModel):
+    """
+    Represents a list of complete outfit suggestions, all featuring a specific
+    focal item from the user's wardrobe.
+    """
+    focal_item: WardrobeItemResponse = Field(..., description="The item that all suggestions are built around.")
+    outfit_suggestions: List[OutfitSuggestion] = Field(..., description="A list of different complete outfits that include the focal item.")
+
+class WeeklyPlanRequest(BaseModel):
+    """Input schema for requesting a weekly outfit plan."""
+    occasion: str = Field(..., description="The general context for the week's outfits.", example="Office Work")
+    days: int = Field(default=5, ge=3, le=7, description="The number of days to plan for (between 3 and 7).")
+
+class DailyPlan(BaseModel):
+    """Represents the planned outfit for a single day."""
+    date: date
+    weather_summary: str
+    outfit: OutfitSuggestion # Re-using the detailed outfit suggestion model
+
+class WeeklyPlanResponse(BaseModel):
+    """The final response containing the full weekly outfit plan."""
+    weekly_plan: List[DailyPlan]
